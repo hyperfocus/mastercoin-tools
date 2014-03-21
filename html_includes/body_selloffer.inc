@@ -75,7 +75,15 @@
                                         </tr>
                                         <tr>
                                             <td>Action</td>
-                                            <td>{{transactionInformation.action}}</td>
+                                            <td>{{transactionInformation.action_str}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Updating offer</td>
+                                            <td><a ng-href="selloffer.html?tx={{transactionInformation.updating}}&currency={{currency}}">{{transactionInformation.updating|characters:10}}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Updated by offer</td>
+                                            <td><a ng-href="selloffer.html?tx={{transactionInformation.updated_by}}&currency={{currency}}">{{transactionInformation.updated_by|characters:10}}</a></td>
                                         </tr>
                                         <tr>
                                             <td>Included in block</td>
@@ -87,17 +95,26 @@
                                         </tr>
                                         <tr>
                                             <td>Block time</td>
-                                            <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
+                                            <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
                                         </tr>
                                         <tr>
                                             <td>Transaction method</td>
                                             <td>{{transactionInformation.method}}</td>
                                         </tr>
-
                                         <tr>
-                                            <td>Valid</td>
-                                            <td class="{{transactionInformation.invalid|truefalsesearch}}ValidState"></td>
-                                        </tr>
+                                       <td>Valid</td>
+                                       <td ng-switch on="transactionInformation.invalid|truefalsesearch" class="{{transactionInformation.invalid|truefalsesearch}}ValidStateDiv">
+                                       <div ng-switch-when="true" id="validPopup"
+                                          data-content="{{reason}}" rel="popover"
+                                          data-placement="bottom" data-original-title="Invalid"
+                                          ng-init="makePopup()">
+                                          Invalid
+                                       </div>
+                                       <div ng-switch-when="false">
+                                          Valid
+                                       </div>
+                                       </td>
+                                       </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -145,7 +162,7 @@
 
                                             <td>{{bid.formatted_amount}}</td>
                                             <td>{{bid.status}}</td>
-                                            <td>{{bid.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
+                                            <td>{{bid.tx_time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -153,4 +170,3 @@
                         </div>
                      </div>
                   </div>
-

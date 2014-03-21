@@ -3,6 +3,8 @@
    <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+      <meta name="google" value="notranslate" />
       <meta name="description" content="">
       <meta name="author" content="">
       <link rel="shortcut icon" href="ico/favicon.png">
@@ -166,7 +168,7 @@
                                         </tr>
                                         <tr>
                                             <td>Block time</td>
-                                            <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
+                                            <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
                                         </tr>
                                         <tr>
                                             <td>Transaction method</td>
@@ -233,7 +235,7 @@
 
                                             <td>{{bid.formatted_amount}}</td>
                                             <td>{{bid.status}}</td>
-                                            <td>{{bid.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
+                                            <td>{{bid.tx_time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -241,7 +243,6 @@
                         </div>
                      </div>
                   </div>
-
                   <div class="left_bar jumbotron col-sm-3 col-sm-pull-9 col-md-2 col-md-pull-10">
                      <nav>
                         <div class="navItems col-xs-6 col-sm-12 no-padding" ng-repeat="val in values">
