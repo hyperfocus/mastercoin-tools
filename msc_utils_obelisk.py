@@ -11,6 +11,7 @@
 #######################################################
 
 import simplejson
+import re
 import os
 import msc_globals
 from msc_utils_bitcoin import *
@@ -221,11 +222,18 @@ def validate_sig(filename, index, script_code, signature):
         return out
 
 def validate_tx(filename):
-    out, err = run_command('sx validtx '+filename)
+    out, err = run_command('sx validtx ' + filename)
     if err != None:
         return err
     else:
-        return out.strip('\n')
+        out = out.strip('\n')
+        info('validated')
+        info(out)
+        found_success = re.findall("Success",out)
+        if found_success != 0:
+            return None
+        else:
+            return out
 
 def send_tx(filename, host='localhost', port=8333):
     out, err = run_command("sx sendtx "+filename+' '+host+' '+port)
@@ -236,9 +244,15 @@ def send_tx(filename, host='localhost', port=8333):
         return None
 
 def broadcast_tx(filename):
-    out, err = run_command("sx broadcast-tx "+filename)
+    out, err = run_command("sx sendtx-bci " + filename)
     if err != None:
         return err
     else:
+        out = out.strip('\n')
         info('broadcasted')
-        return None
+        info(out)
+        found_success = re.findall("Success",out)
+        if found_success != 0:
+            return None
+        else:
+            return out
