@@ -307,7 +307,8 @@ def parse_multisig(tx, tx_hash='unknown'):
             to_address=o['address']
             continue
 
-    for o in outputs_list_no_exodus:
+    data_script_list = []
+    for idx,o in enumerate(outputs_list_no_exodus):
         if o['address']==None: # This should be the multisig
             script=o['script']
             # verify that it is a multisig
@@ -326,18 +327,18 @@ def parse_multisig(tx, tx_hash='unknown'):
                 return {'tx_hash':tx_hash, 'invalid':(True, 'error m-of-n with n out of range')}
 
             # parse the BIP11 pubkey list
-            data_script_list=[]
             for i in range(MAX_PUBKEY_IN_BIP11-1):
                 index=i+2 # the index of the i'th pubkey
                 try:
-                    data_script_list.append(fields[index].split(' ]')[0])
+                    if new_script not in data_script_list: 
+                        data_script_list.append(fields[index].split(' ]')[0])
                 except IndexError:
                     break
 
             # prepare place holder lists for obfus,deobfus,data_dict
             dataHex_deobfuscated_list=[]
             data_dict_list=[]
-           
+
             if input_addr == None:
                 info('none input address (BIP11 inputs are not supported yet)')
                 return {'tx_hash':tx_hash, 'invalid':(True, 'not supported input (BIP11/BIP16)')}
@@ -457,6 +458,9 @@ def parse_multisig(tx, tx_hash='unknown'):
                             bitcoin_dict=parse_bitcoin_payment(tx, tx_hash)
                             parse_dict['formatted_fee']=bitcoin_dict['fee']
 
+                        if data_dict['transactionType'] == '0032': # Sell accept
+                            if idx == len(outputs_list_no_exodus)-1:
+                                print dataHex_deobfuscated_list
                         else: # non valid tx type
                             return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
 
