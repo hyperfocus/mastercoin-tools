@@ -695,7 +695,7 @@ def add_offers(key, t):
     else:
         offers_dict[key]=[t['tx_hash']]
 
-# add another sell tx to the modified dict
+# add another property  to the modified dict
 def add_properties(key, t):
     if properties_dict.has_key(key):
         properties_dict[key].append(t['tx_hash'])
@@ -729,7 +729,7 @@ def update_properties():
         properties=[]
         for prop_hash in properties_dict[tx_hash]:
             properties.append(tx_dict[prop_hash][-1])
-        # write updated offers
+        # write updated props
         atomic_json_dump(properties, 'properties/properties-'+tx_hash+'.json', add_brackets=False)
 
 def update_bitcoin_balances():
