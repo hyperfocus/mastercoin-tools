@@ -458,60 +458,60 @@ def parse_multisig(tx, tx_hash='unknown'):
                             # parse as bitcoin payment to get the tx fee
                             bitcoin_dict=parse_bitcoin_payment(tx, tx_hash)
                             parse_dict['formatted_fee']=bitcoin_dict['fee']
+                        else:
+                            if data_dict['transactionType'] == '0032': # Smart Property
+                                if idx == len(outputs_list_no_exodus)-1: # we are on last output
+                                    long_packet = ''
+                                    for datahex in dataHex_deobfuscated_list:
+                                        if len(datahex)<42:
+                                            info('invalid data script '+data_script.encode('hex_codec'))
+                                            parse_dict['invalid']=(True, 'datahex is not right length')
+                                        parse_dict['baseCoin']=datahex[0:2] # 00 for BTC
+                                        long_packet += datahex[4:-2].upper()
 
-                        if data_dict['transactionType'] == '0032': # Smart Property
-                            if idx == len(outputs_list_no_exodus)-1: # we are on last output
-                                long_packet = ''
-                                for datahex in dataHex_deobfuscated_list:
-                                    if len(datahex)<42:
-                                        info('invalid data script '+data_script.encode('hex_codec'))
-                                        parse_dict['invalid']=(True, 'datahex is not right length')
-                                    parse_dict['baseCoin']=datahex[0:2] # 00 for BTC
-                                    long_packet += datahex[4:-2].upper()
+                                    spare_bytes = ''
+                                    #unneeded fields
+                                    parse_dict.pop('currencyId', None)
+                                    parse_dict.pop('currency_str', None)
+                                    parse_dict.pop('amount', None)
+                                    parse_dict.pop('formatted_amount', None)
+                                    parse_dict.pop('bitcoin_amount_desired', None)
+                                    parse_dict.pop('block_time_limit', None)
 
-                                spare_bytes = ''
-                                #unneeded fields
-                                parse_dict.pop('currencyId', None)
-                                parse_dict.pop('currency_str', None)
-                                parse_dict.pop('amount', None)
-                                parse_dict.pop('formatted_amount', None)
-                                parse_dict.pop('bitcoin_amount_desired', None)
-                                parse_dict.pop('block_time_limit', None)
+                                    parse_dict['tx_hash'] = tx_hash
 
-                                parse_dict['tx_hash'] = tx_hash
+                                    #fixed fields
+                                    parse_dict['transactionVersion']=long_packet[0:4]
+                                    parse_dict['transactionType']=long_packet[4:8]
+                                    parse_dict['ecosystem']=long_packet[8:10]
+                                    parse_dict['property_type']=long_packet[10:14]
+                                    parse_dict['previous_property_id']=long_packet[14:22]
 
-                                #fixed fields
-                                parse_dict['transactionVersion']=long_packet[0:4]
-                                parse_dict['transactionType']=long_packet[4:8]
-                                parse_dict['ecosystem']=long_packet[8:10]
-                                parse_dict['property_type']=long_packet[10:14]
-                                parse_dict['previous_property_id']=long_packet[14:22]
+                                    #non-hex version for UI
+                                    parse_dict['formatted_transactionVersion']=int(long_packet[0:4],16)
+                                    parse_dict['formatted_transactionType']=int(long_packet[4:8],16)
+                                    parse_dict['formatted_ecosystem']=int(long_packet[8:10],16)
+                                    parse_dict['formatted_property_type']=int(long_packet[10:14],16)
+                                    parse_dict['formatted_previous_property_id']=int(long_packet[14:22],16)
+                                    #prepare var-fields for processing
+                                    spare_bytes = ''.join(long_packet[22:])
 
-                                #non-hex version for UI
-                                parse_dict['formatted_transactionVersion']=int(long_packet[0:4],16)
-                                parse_dict['formatted_transactionType']=int(long_packet[4:8],16)
-                                parse_dict['formatted_ecosystem']=int(long_packet[8:10],16)
-                                parse_dict['formatted_property_type']=int(long_packet[10:14],16)
-                                parse_dict['formatted_previous_property_id']=int(long_packet[14:22],16)
-                                #prepare var-fields for processing
-                                spare_bytes = ''.join(long_packet[22:])
+                                    #var fields
+                                    try:
+                                        parse_dict['propertyCategory']=spare_bytes.split('00')[0].decode('hex')
+                                        parse_dict['propertySubcategory']=spare_bytes.split('00')[1].decode('hex')
+                                        parse_dict['propertyName']=spare_bytes.split('00')[2].decode('hex')
+                                        parse_dict['propertyUrl']=spare_bytes.split('00')[3].decode('hex')
+                                        parse_dict['propertyData']=spare_bytes.split('00')[4].decode('hex')
+                                    except TypeError:
+                                        error('cannot parse smart property fields')
 
-                                #var fields
-                                try:
-                                    parse_dict['propertyCategory']=spare_bytes.split('00')[0].decode('hex')
-                                    parse_dict['propertySubcategory']=spare_bytes.split('00')[1].decode('hex')
-                                    parse_dict['propertyName']=spare_bytes.split('00')[2].decode('hex')
-                                    parse_dict['propertyUrl']=spare_bytes.split('00')[3].decode('hex')
-                                    parse_dict['propertyData']=spare_bytes.split('00')[4].decode('hex')
-                                except TypeError:
-                                    error('cannot parse smart property fields')
+                                    num_var_fields = 5
+                                    len_var_fields = len(''.join(spare_bytes.split('00')[:num_var_fields]) + ('00'*num_var_fields) )
 
-                                num_var_fields = 5
-                                len_var_fields = len(''.join(spare_bytes.split('00')[:num_var_fields]) + ('00'*num_var_fields) )
-
-                                parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields:len_var_fields+16],16))
-                        else: # non valid tx type
-                            return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
+                                    parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields:len_var_fields+16],16))
+                            else: # non valid tx type
+                                return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
 
         else: # not the multisig output
             # the output with dust
