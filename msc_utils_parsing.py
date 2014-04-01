@@ -506,8 +506,8 @@ def parse_multisig(tx, tx_hash='unknown'):
                                         parse_dict['propertyName']=spare_bytes.split('00')[2].decode('hex')
                                         parse_dict['propertyUrl']=spare_bytes.split('00')[3].decode('hex')
                                         parse_dict['propertyData']=spare_bytes.split('00')[4].decode('hex')
-                                    except TypeError:
-                                        error('cannot parse smart property fields')
+                                    except Exception,e:
+                                        error(['cannot parse smart property fields',e, tx_hash])
 
                                     num_var_fields = 5
                                     len_var_fields = len(''.join(spare_bytes.split('00')[:num_var_fields]) + ('00'*num_var_fields) )
