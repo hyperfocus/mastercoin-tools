@@ -473,7 +473,7 @@ def parse_multisig(tx, tx_hash='unknown'):
 
                                     #set these fields for validation
                                     parse_dict['formatted_amount'] = 0
-                                    parse_dict['currency_str'] = 'Test Mastercoin'
+                                    parse_dict['currency_str'] = 'Smart Property'
                                     parse_dict['currencyId'] = 0
 
                                     #unneeded fields
