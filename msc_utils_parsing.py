@@ -14,7 +14,7 @@ from msc_utils_obelisk import *
 
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
 reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'}
-transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept', '0032':'Fixed property creation'}
+transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept', '0032':'Fixed property creation', '0033': 'Fundraiser property creation'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 first_exodus_bootstrap_block=249498
@@ -459,7 +459,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                             bitcoin_dict=parse_bitcoin_payment(tx, tx_hash)
                             parse_dict['formatted_fee']=bitcoin_dict['fee']
                         else:
-                            if data_dict['transactionType'] == '0032': # Smart Property
+                            if data_dict['transactionType'] == '0032' or data_dict['transactionType'] == '0033': # Smart Property
                                 if idx == len(outputs_list_no_exodus)-1: # we are on last output
                                     long_packet = ''
                                     for datahex in dataHex_deobfuscated_list:
@@ -509,10 +509,23 @@ def parse_multisig(tx, tx_hash='unknown'):
                                     except Exception,e:
                                         error(['cannot parse smart property fields',e, tx_hash])
 
+
                                     num_var_fields = 5
                                     len_var_fields = len(''.join(spare_bytes.split('00')[:num_var_fields]) + ('00'*num_var_fields) )
+                                    
+                                    #fixed fields after var fields
+                                    try:
+                                        if data_dict['transactionType'] == '0032':
+                                            parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields:len_var_fields+16],16))
+                                        else:
+                                            parse_dict['currencyIdentifierDesired']=str(int(spare_bytes[len_var_fields:len_var_fields+8],16))
+                                            parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields+8:len_var_fields+8+16],16))
+                                            parse_dict['deadline']=str(int(spare_bytes[len_var_fields+8+16:len_var_fields+8+16+16],16))
+                                            parse_dict['earlybirdBonus']=str(int(spare_bytes[len_var_fields+8+16+16:len_var_fields+8+16+16+2],16))
+                                            parse_dict['percentageForIssuer']=str(int(spare_bytes[len_var_fields+8+16+16+2:len_var_fields+8+16+16+2+2],16))
+                                    except Exception,e:
+                                        error(['cannot parse smart property fields', e, tx_hash])
 
-                                    parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields:len_var_fields+16],16))
                             else: # non valid tx type
                                 return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
 
