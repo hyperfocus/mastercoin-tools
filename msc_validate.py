@@ -739,13 +739,13 @@ def update_offers():
 
 # create prop json
 def update_properties():
-    for tx_hash in properties_dict.keys():
-        # generate tx list for each tx_hash
+    for prop_id in properties_dict.keys():
+        # generate tx list for each id
         properties=[]
-        for prop_hash in properties_dict[tx_hash]:
+        for prop_hash in properties_dict[prop_id]:
             properties.append(tx_dict[prop_hash][-1])
         # write updated props
-        atomic_json_dump(properties, 'properties/properties-'+tx_hash+'.json', add_brackets=False)
+        atomic_json_dump(properties, 'properties/properties-'+prop_id+'.json', add_brackets=False)
 
 def update_bitcoin_balances():
     if msc_globals.b == True:
@@ -1390,18 +1390,22 @@ def check_mastercoin_transaction(t, index=-1):
                     debug_address(to_addr,c, 'after sell accept')
                     return True
                 else:
-                    if t['tx_type_str']==transaction_type_dict['0032']:
-                        debug('fixed property creation from '+t['from_address']+' '+t['tx_hash'])
+                    if t['tx_type_str']==transaction_type_dict['0032'] or t['tx_type_str']==transaction_type_dict['0033']:
+                        transaction_type=t['tx_type_str']
                         transaction_version=t['transactionVersion']
                         if transaction_version != '0000' and transaction_version != '0001':
                             info('non supported property version with transaction version '+transaction_version)
                             mark_tx_invalid(t['tx_hash'], 'non supported sell offer with transaction version '+transaction_version)
                             return False
 
+                        debug('property creation from '+t['from_address']+' '+t['tx_hash'])
                         ecosystem = int(t['ecosystem'])
                         if ecosystem == 1:
                             mark_tx_invalid(tx_hash, 'MSC ecosystem not yet launched')
                             return False
+                        else:
+                            #determine prop_id
+                            prop_id=str(len(properties_dict) + 2147483651)  # +3 to not collide with MSC/TMSC
 
                         #used later in validation
                         #property_type = t['property_type']
@@ -1411,16 +1415,18 @@ def check_mastercoin_transaction(t, index=-1):
                         prop_name = t['propertyName']
                         #prop_url = t['propertyUrl']
                         #prop_data = t['propertyData']
+                        #curr_desired = t['currencyIdentifierDesired']
                         num_prop = t['numberOfProperties']
+                        #deadline = t['deadline']
+                        #earlybird_bonus = t['earlybirdBonus']
+                        #percentage_for_issuer = t['percentageForIssuer']
                         
-                        #update the property with the hash
-                        prop_id=str(len(properties_dict) + 2)  # +2 to not collide with MSC/TMSC
-
                         # add symbol to dict
                         coins_dict[prop_name]=str(prop_id)
                         coins_short_name_dict[prop_name]='SP' + str(prop_id)
                         
                         # update property dict
+                        t['currencyId'] = prop_id
                         add_properties(prop_id,t)
 
                         # update to_addr
