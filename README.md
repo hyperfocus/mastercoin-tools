@@ -5,6 +5,7 @@ mastercoin-tools
 * Package of mastercoin related tools.
 * The intention is to help finalizing the mastercoin spec, and enable easy further coding.
 
+For API documentation, please [Read The Docs](http://mastercoin-tools-installer.readthedocs.org/en/latest/).
 
 ## Based on what? ##
 * The code uses the package sx, which is libbitcoin based.
