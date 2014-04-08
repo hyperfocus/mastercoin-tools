@@ -10,7 +10,7 @@
 #                                                     #
 #######################################################
 
-import traceback
+import traceback,glob,json
 from msc_utils_obelisk import *
 
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
@@ -39,7 +39,17 @@ def get_dataSequenceNum(item):
     except KeyError, IndexError:
         return None
 
+def refreshCurrencyIDs():
+    try:
+        property_files = glob.glob('properties/*.json')
+        for property_file in property_files:
+            currency_type_dict[ hex(int(str(property_file.split('.')[0].split('-')[1])))[2:] ] = 'Smart Property'
+            #reverse_currency_type_dict['Smart Property'] = str(property_file.split('.')[0].split('-')[1])
+    except Exception,e:
+        error('error getting glob of properties',e)
+
 def get_currency_type_from_dict(currencyId):
+    refreshCurrencyIDs()
     if currency_type_dict.has_key(currencyId):
         return currency_type_dict[currencyId]
     else:

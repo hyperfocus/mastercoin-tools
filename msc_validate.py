@@ -991,6 +991,11 @@ def check_mastercoin_transaction(t, index=-1):
         # left are normal transfer and sell offer/accept
         if t['tx_type_str']==transaction_type_dict['0000']:
 
+            transaction_smartProperty=False
+            # need to get actual currency name at this point
+            if c == 'Smart Property':
+                transaction_smartProperty=True
+                c = coins_dict.keys()[coins_dict.values().index(str(int(t['currencyId'],16)))]
             # heavy debug
             debug_address(from_addr,c, 'before simplesend')
             debug_address(to_addr,c, 'before simplesend')
@@ -1021,10 +1026,15 @@ def check_mastercoin_transaction(t, index=-1):
                     mark_tx_invalid(tx_hash, 'balance too low')
                     return False
                 else:
-                    # update to_addr
-                    update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
-                    # update from_addr
-                    update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                    if transaction_smartProperty == True:
+                        # update to_addr
+                        update_addr_dict(to_addr, True,'Smart Property', c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                        # update from_addr
+                        update_addr_dict(from_addr, True,'Smart Property', c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                    else:
+                        update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                        # update from_addr
+                        update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
 
                     debug('simplesend '+str(amount_transfer)+' '+c+' from '+from_addr+' to '+to_addr+' '+tx_hash)
 
