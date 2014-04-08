@@ -1000,6 +1000,10 @@ def check_mastercoin_transaction(t, index=-1):
             debug_address(from_addr,c, 'before simplesend')
             debug_address(to_addr,c, 'before simplesend')
 
+            #check active_raisers dict if to_addr has open fundraiser
+            if to_addr in active_fundraisers:
+                transaction_activeFundraiser=True
+
             if tx_age <= blocks_consider_new:
                 update_tx_dict(t['tx_hash'], color='bgc-new', icon_text='Simple send ('+str(tx_age)+' confirms)')
             else:
@@ -1032,9 +1036,15 @@ def check_mastercoin_transaction(t, index=-1):
                         # update from_addr
                         update_addr_dict(from_addr, True,'Smart Property', c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
                     else:
-                        update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
-                        # update from_addr
-                        update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                        if transaction_activeFundraiser == True:
+                            # update to_addr
+                            update_addr_dict(to_addr, True,'Smart Property', c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                            # update from_addr
+                            update_addr_dict(from_addr, True,'Smart Property', c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                        else:
+                            update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                            # update from_addr
+                            update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
 
                     debug('simplesend '+str(amount_transfer)+' '+c+' from '+from_addr+' to '+to_addr+' '+tx_hash)
 
@@ -1504,6 +1514,7 @@ def validate():
         except ValueError:
             error('invalid block number during validation: '+t['block'])
         check_alarm(t, last_block, current_block)
+        check_active_fundraisers()
         # update last_block for next alarm check
         last_block=current_block
 
