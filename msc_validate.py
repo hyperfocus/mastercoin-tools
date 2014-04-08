@@ -995,7 +995,7 @@ def check_mastercoin_transaction(t, index=-1):
             # need to get actual currency name at this point
             if c == 'Smart Property':
                 transaction_smartProperty=True
-                c = coins_dict.keys()[coins_dict.values().index(str(int(str(t['currencyId']),16)))]
+                c = coins_dict.keys()[coins_dict.values().index(str(int(t['currencyId'],16)))]
             # heavy debug
             debug_address(from_addr,c, 'before simplesend')
             debug_address(to_addr,c, 'before simplesend')
