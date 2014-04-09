@@ -21,7 +21,11 @@ alarm={}
 # create address dict that holds all details per address
 addr_dict={}
 tx_dict={}
+
+#create dict of active fundraisers
 fundraisers_dict={}
+#create dict of divisible/non smart_properties
+property_type_dict={}
 
 # prepare lists for mastercoin and test
 sorted_currency_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
@@ -825,7 +829,21 @@ def generate_api_jsons():
                 available_reward=get_available_reward(last_height, c)
                 sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
             else:
-                sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+                #if c is in smart_property_dict and is divisible, otherwise just normal is fine
+                try:
+                    property_type = property_type_dict[c]
+                    if property_type == '0002':
+                        sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+                    else:
+                        sub_dict['balance']=addr_dict[addr][c]['balance']
+                except KeyError:
+                    #assume normal divisible property like MSC or TMSC
+                    sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+
+                #DEBUG
+                #if len(property_type_dict) > 0:
+                #    info(['property types', property_type_dict, c, sub_dict['balance'], sub_dict])
+
             sub_dict['total_reserved']=from_satoshi(addr_dict[addr][c]['reserved'])
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
@@ -1454,7 +1472,7 @@ def check_mastercoin_transaction(t, index=-1):
                             fundraiser = False
 
                         #used later in validation
-                        #property_type = t['property_type']
+                        property_type = t['property_type']
                         prev_prop_id = int(t['previous_property_id'])
                         #prop_cat = t['propertyCategory']
                         #prop_subcat = t['propertySubcategory']
@@ -1468,6 +1486,7 @@ def check_mastercoin_transaction(t, index=-1):
                         #percentage_for_issuer = t['percentageForIssuer']
                         
                         # add symbol to dict
+                        property_type_dict[prop_name]=property_type
                         coins_dict[prop_name]=str(prop_id)
                         coins_short_name_dict[prop_name]='SP' + str(prop_id)
                         
@@ -1480,6 +1499,7 @@ def check_mastercoin_transaction(t, index=-1):
                             update_addr_dict(from_addr, True, c, prop_name, balance=num_prop, in_tx=t)
                         
                         if fundraiser: #active and valid fundraiser
+                            info(['new fundraiser detected', from_addr, t])
                             fundraisers_dict[from_addr] = t
 
                         return True
