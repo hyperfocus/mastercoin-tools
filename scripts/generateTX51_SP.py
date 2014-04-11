@@ -99,7 +99,7 @@ prop_type_bytes = hex(property_type)[2:].rjust(4,"0")    # 2 bytes
 prev_prop_id_bytes = hex(previous_property_id)[2:].rjust(8,"0")  # 4 bytes
 
 #set MSB for test eco
-if ecosystem == 2:
+if ecosystem == 2 and currency_identifier_desired != 2:
     curr_ident_des_bytes = ''.join(['8']+list(hex(currency_identifier_desired)[2:].rjust(8,"0"))[1:])      # 4 bytes
 else:
     curr_ident_des_bytes = hex(currency_identifier_desired)[2:].rjust(8,"0")      # 4 bytes
@@ -275,8 +275,7 @@ fee_total = Decimal(0.0001) + Decimal(0.000055*total_packets+0.000055*total_outs
 change = largest_spendable_input['amount'] - fee_total
 # calculate change : 
 # (total input amount) - (broadcast fee)
-
-if Decimal(change) < Decimal(0) or fee_total > largest_spendable_input['amount'] and not force:
+if (Decimal(change) < Decimal(0) or fee_total > largest_spendable_input['amount']) and not force:
     print json.dumps({ "status": "NOT OK", "error": "Not enough funds" , "fix": "Set \'force\' flag to proceed without balance checks" })
     exit()
 
