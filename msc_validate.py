@@ -22,6 +22,11 @@ alarm={}
 addr_dict={}
 tx_dict={}
 
+#create dict of active fundraisers
+fundraisers_dict={}
+#create dict of divisible/non smart_properties
+property_type_dict={}
+
 # prepare lists for mastercoin and test
 sorted_currency_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
 sorted_currency_sell_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
@@ -773,7 +778,13 @@ def update_bitcoin_balances():
         for b in balances:
             update_addr_dict(b['address'], False, 'Bitcoin', balance=b['paid'])
        
- 
+def check_active_fundraisers(time_block):
+    import time
+    for address in fundraisers_dict.keys():
+        deadline = int(fundraisers_dict[address]['deadline'])
+        if not (time_block < deadline): #fundraiser deadline has not been reached
+            debug(['Deleted fundraiser', address])
+            del fundraisers_dict[address]
 # generate api json
 # address
 # general files (10 in a page)
@@ -818,7 +829,21 @@ def generate_api_jsons():
                 available_reward=get_available_reward(last_height, c)
                 sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
             else:
-                sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+                #if c is in smart_property_dict and is divisible, otherwise just normal is fine
+                try:
+                    property_type = property_type_dict[c]
+                    if property_type == '0002':
+                        sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+                    else:
+                        sub_dict['balance']=addr_dict[addr][c]['balance']
+                except KeyError:
+                    #assume normal divisible property like MSC or TMSC
+                    sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+
+                #DEBUG
+                #if len(property_type_dict) > 0:
+                #    info(['property types', property_type_dict, c, sub_dict['balance'], sub_dict])
+
             sub_dict['total_reserved']=from_satoshi(addr_dict[addr][c]['reserved'])
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
@@ -1000,6 +1025,13 @@ def check_mastercoin_transaction(t, index=-1):
             debug_address(from_addr,c, 'before simplesend')
             debug_address(to_addr,c, 'before simplesend')
 
+            #check active_raisers dict if to_addr has open fundraiser
+            if to_addr in fundraisers_dict.keys() and int(fundraisers_dict[to_addr]['currencyIdentifierDesired'],16) == int(t['currencyId'],16):
+                transaction_activeFundraiser=True
+                info(['active fundraiser send detected',t])
+            else:
+                transaction_activeFundraiser=False
+
             if tx_age <= blocks_consider_new:
                 update_tx_dict(t['tx_hash'], color='bgc-new', icon_text='Simple send ('+str(tx_age)+' confirms)')
             else:
@@ -1032,9 +1064,26 @@ def check_mastercoin_transaction(t, index=-1):
                         # update from_addr
                         update_addr_dict(from_addr, True,'Smart Property', c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
                     else:
-                        update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
-                        # update from_addr
-                        update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                        if transaction_activeFundraiser == True:
+                            # update the balances for the main currency
+                            # update to_addr
+                            update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                            # update from_addr
+                            update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                            
+                            #update the balances for the smart property being funded
+                            active_fundraiser = fundraisers_dict[to_addr]
+                            c = coins_dict.keys()[coins_dict.values().index(str(active_fundraiser['currencyId']))]
+                            if int(active_fundraiser['property_type']) == 2:
+                                #for property_type 2 (divisible)
+                                update_addr_dict(from_addr, True,'Smart Property', c, balance=(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ), received=(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']), in_tx=active_fundraiser)
+                            else:
+                                #for property_type 1 (non-divisible) use ints for calculating the amount_transfer
+                                update_addr_dict(from_addr, True,'Smart Property', c, balance=int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ), received=int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']), in_tx=active_fundraiser)
+                        else:
+                            update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                            # update from_addr
+                            update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
 
                     debug('simplesend '+str(amount_transfer)+' '+c+' from '+from_addr+' to '+to_addr+' '+tx_hash)
 
@@ -1417,8 +1466,13 @@ def check_mastercoin_transaction(t, index=-1):
                             #determine prop_id
                             prop_id=str(len(properties_dict) + 2147483651)  # +3 to not collide with MSC/TMSC
 
+                        if transaction_type == transaction_type_dict['0033']:
+                            fundraiser = True
+                        else:
+                            fundraiser = False
+
                         #used later in validation
-                        #property_type = t['property_type']
+                        property_type = t['property_type']
                         prev_prop_id = int(t['previous_property_id'])
                         #prop_cat = t['propertyCategory']
                         #prop_subcat = t['propertySubcategory']
@@ -1432,6 +1486,7 @@ def check_mastercoin_transaction(t, index=-1):
                         #percentage_for_issuer = t['percentageForIssuer']
                         
                         # add symbol to dict
+                        property_type_dict[prop_name]=property_type
                         coins_dict[prop_name]=str(prop_id)
                         coins_short_name_dict[prop_name]='SP' + str(prop_id)
                         
@@ -1440,7 +1495,12 @@ def check_mastercoin_transaction(t, index=-1):
                         add_properties(prop_id,t)
 
                         # update to_addr
-                        update_addr_dict(from_addr, True, c, prop_name, balance=num_prop, in_tx=t)
+                        if not fundraiser:
+                            update_addr_dict(from_addr, True, c, prop_name, balance=num_prop, in_tx=t)
+                        
+                        if fundraiser: #active and valid fundraiser
+                            info(['new fundraiser detected', from_addr, t])
+                            fundraisers_dict[from_addr] = t
 
                         return True
                     else:
@@ -1501,9 +1561,13 @@ def validate():
         # check alarm (verify accept offers get payment in time)
         try:
             current_block=int(t['block'])
-        except ValueError:
+        except ValueError,e:
             error('invalid block number during validation: '+t['block'])
         check_alarm(t, last_block, current_block)
+        
+        if current_block > 292636 and t['tx_hash'] != 'fake': #first SP transaction
+            current_timestamp=int(t['tx_time'][:-3])
+            check_active_fundraisers(current_timestamp)
         # update last_block for next alarm check
         last_block=current_block
 
@@ -1524,18 +1588,23 @@ def validate():
         except OSError:
             error('error on tx '+t['tx_hash'])
 
+    info('updating.. offers')
     # create json for offers
     update_offers()
 
+    info('updating.. properties')
     # create json for properties
     update_properties()
 
+    info('updating.. transactions')
     # update changed tx
     write_back_modified_tx()
 
+    info('updating.. jsons')
     # generate address pages and last tx pages
     generate_api_jsons()
 
+    info('done...')
     # write last validated block
     f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'w')
     f.write(str(last_block)+'\n')
