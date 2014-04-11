@@ -1504,8 +1504,24 @@ def check_mastercoin_transaction(t, index=-1):
 
                         return True
                     else:
-                        info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
-                        return False
+                        if t['tx_type_str']==transaction_type_dict['0035']:
+                            transaction_type=t['tx_type_str']
+                            transaction_version=t['transactionVersion']
+                            if transaction_version != '0000' and transaction_version != '0001':
+                                info('non supported property version with transaction version '+transaction_version)
+                                mark_tx_invalid(t['tx_hash'], 'non supported sell offer with transaction version '+transaction_version)
+                                return False
+
+                            if fundraisers_dict.has_key(from_addr) and (fundraisers_dict[from_addr]['currencyId'] == str(int(t['property_type'],16))):
+                                info(['fundraiser cancellation detected, deleting: ', from_addr, t['tx_hash'] ])
+                                del fundraisers_dict[from_addr]
+                                return True
+                            else:
+                                mark_tx_invalid(t['tx_hash'],'no open fundraisers on this address at the current block')
+                                return False
+                        else:
+                            info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
+                            return False
 
 
 #########################################################################
