@@ -1073,13 +1073,30 @@ def check_mastercoin_transaction(t, index=-1):
                             
                             #update the balances for the smart property being funded
                             active_fundraiser = fundraisers_dict[to_addr]
+                            #bonus calculation
+                            bonus_seconds = int(t['deadline']) - int(t['tx_time'][:-3])
+                            bonus_percentage =  (( bonus_seconds/604800) * (t['earlybirdBonus']/100)) + 1
+                            #percent for issuer calculation
+                            percentage_issuer = (active_fundraiser['percentageForIssuer']*0.01)
                             c = coins_dict.keys()[coins_dict.values().index(str(active_fundraiser['currencyId']))]
                             if int(active_fundraiser['property_type']) == 2:
                                 #for property_type 2 (divisible)
-                                update_addr_dict(from_addr, True,'Smart Property', c, balance=(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ), received=(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']), in_tx=active_fundraiser)
+                                tokens_created=((amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']))*bonus_percentage
+                                #add Z% of Y Tokens and assign to issuer
+                                tokens_percent_issuer=tokens_created*percentage_issuer 
+
+                                #add %bonus and assign to buyer here
+                                update_addr_dict(from_addr, True,'Smart Property', c, balance=tokens_created, received=tokens_created, in_tx=active_fundraiser)
+                                update_addr_dict(to_addr, True,'Smart Property', c, balance=tokens_percent_issuer, received=tokens_percent_issuer, in_tx=t)
                             else:
+                                #for property_type 1(indivisible) note int type for calculation
+                                tokens_created=int((int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ))*bonus_percentage)
+                                #add Z% of Y Tokens and assign to issuer
+                                tokens_percent_issuer=tokens_created*percentage_issuer 
+                                
                                 #for property_type 1 (non-divisible) use ints for calculating the amount_transfer
-                                update_addr_dict(from_addr, True,'Smart Property', c, balance=int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ), received=int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']), in_tx=active_fundraiser)
+                                update_addr_dict(from_addr, True,'Smart Property', c, balance=tokens_created, received=tokens_created, in_tx=active_fundraiser)
+                                update_addr_dict(to_addr, True,'Smart Property', c, balance=tokens_percent_issuer, received=tokens_percent_issuer, in_tx=t)
                         else:
                             update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
                             # update from_addr
