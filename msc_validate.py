@@ -1515,9 +1515,14 @@ def check_mastercoin_transaction(t, index=-1):
                         if not fundraiser:
                             update_addr_dict(from_addr, True, c, prop_name, balance=num_prop, in_tx=t)
                         
+
                         if fundraiser: #active and valid fundraiser
-                            info(['new fundraiser detected', from_addr, t])
-                            fundraisers_dict[from_addr] = t
+                            if fundraisers_dict.has_key(from_addr):
+                                mark_tx_invalid(t['tx_hash'],'already open fundraiser on this address at the current block')
+                                return False
+                            else:
+                                info(['new fundraiser detected', from_addr, t])
+                                fundraisers_dict[from_addr] = t
 
                         return True
                     else:
