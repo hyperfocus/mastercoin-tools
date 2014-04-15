@@ -11,6 +11,7 @@
 #######################################################
 
 import os
+import sys
 from optparse import OptionParser
 from msc_utils_validating import *
 
@@ -1019,8 +1020,11 @@ def check_mastercoin_transaction(t, index=-1):
             transaction_smartProperty=False
             # need to get actual currency name at this point
             if c == 'Smart Property':
+                # print >> sys.stderr, 'Looking up smart property name'
                 transaction_smartProperty=True
                 c = coins_dict.keys()[coins_dict.values().index(str(int(t['currencyId'],16)))]
+                # print >> sys.stderr, 'Smart property name: ' + c
+                # print >> sys.stderr, '   currencyId: ' + str(int(t['currencyId'],16))
             # heavy debug
             debug_address(from_addr,c, 'before simplesend')
             debug_address(to_addr,c, 'before simplesend')
@@ -1052,7 +1056,18 @@ def check_mastercoin_transaction(t, index=-1):
                     available_reward=get_available_reward(t['block'], c)
                     balance_from=available_reward+addr_dict[from_addr][c]['balance']
                 else:
-                    balance_from=addr_dict[from_addr][c]['balance']
+                    # print >> sys.stderr,  'Getting keys from address: ' + str( from_addr )
+                    for key in addr_dict[from_addr]:
+                        print  >> sys.stderr, '   ' + str( key )
+
+                    # print >> sys.stderr, 'Sending funds to: ' + str( to_addr )
+                    if c in addr_dict[from_addr]:
+                        balance_from=addr_dict[from_addr][c]['balance']
+                    else:
+                        debug( 'Property ' + c + ' does not exist on ' + from_addr + ' in ' + tx_hash )
+                        mark_tx_invalid( tx_hash, 'nonexistent property on source address' )
+                        return False
+
                 if amount_transfer > int(balance_from):
                     debug('balance of '+currency+' is too low on '+tx_hash)
                     mark_tx_invalid(tx_hash, 'balance too low')
