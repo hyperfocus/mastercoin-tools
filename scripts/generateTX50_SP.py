@@ -84,7 +84,7 @@ property_subcategory = listOptions['property_subcategory']
 property_name = listOptions['property_name']
 property_url = listOptions['property_url']
 property_data = listOptions['property_data']
-number_properties = listOptions['number_properties']
+number_properties = listOptions['number_properties'] * ( 100000000 if property_type is 2 else 1 )
 
 #calculate bytes
 tx_ver_bytes = hex(transaction_version)[2:].rjust(4,"0") # 2 bytes
