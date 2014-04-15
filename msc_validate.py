@@ -24,6 +24,7 @@ tx_dict={}
 
 #create dict of active fundraisers
 fundraisers_dict={}
+fundraisers_metadata_dict={}
 #create dict of divisible/non smart_properties
 property_type_dict={}
 
@@ -777,13 +778,46 @@ def update_bitcoin_balances():
         # update addr_dict with bitcoin balance
         for b in balances:
             update_addr_dict(b['address'], False, 'Bitcoin', balance=b['paid'])
-       
+
+def award_premine_to_issuer(issuer_addr):
+    active_fundraiser = fundraisers_dict[issuer_addr]
+    fundraiser_metadata = fundraisers_metadata_dict[active_fundraiser['tx_hash']]
+
+    fundraiser_metadata['total_tokens_created'] = 0
+    #percent for issuer calculation
+    percentage_issuer = (int(active_fundraiser['percentageForIssuer'])*0.01)
+    c = coins_dict.keys()[coins_dict.values().index(str(active_fundraiser['currencyId']))]
+    for transaction in fundraiser_metadata['funded_tx']:
+        bonus_seconds = int(active_fundraiser['deadline']) - int(transaction['tx_time'][:-3])
+        bonus_percentage =  (( bonus_seconds/604800) * (int(active_fundraiser['earlybirdBonus'])/100)) + 1
+
+        amount_transfer=to_satoshi(transaction['formatted_amount'])
+        if int(active_fundraiser['property_type']) == 2:
+            #for property_type 2 (divisible)
+            tokens_created=((amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']))*bonus_percentage
+            fundraiser_metadata['total_tokens_created']+=tokens_created
+        else:
+            #for property_type 1(indivisible) note int type for calculation
+            tokens_created=int((int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ))*bonus_percentage)
+            fundraiser_metadata['total_tokens_created']+=tokens_created
+
+    #add Z% of Y Tokens and assign to issuer
+    total_tokens_premine=fundraiser_metadata['total_tokens_created']*percentage_issuer
+    
+    if int(active_fundraiser['property_type']) == 2:
+        total_tokens_missed=total_tokens_premine-fundraiser_metadata['current_premine']
+    else:
+        total_tokens_missed=int(total_tokens_premine-fundraiser_metadata['current_premine'])
+
+    update_addr_dict(issuer_addr, True,'Smart Property', c, balance=total_tokens_missed, received=total_tokens_missed, in_tx=active_fundraiser)
+
 def check_active_fundraisers(time_block):
     import time
     for address in fundraisers_dict.keys():
         deadline = int(fundraisers_dict[address]['deadline'])
         if not (time_block < deadline): #fundraiser deadline has not been reached
             debug(['Deleted fundraiser', address])
+            award_premine_to_issuer(address)
             del fundraisers_dict[address]
 # generate api json
 # address
@@ -1066,18 +1100,17 @@ def check_mastercoin_transaction(t, index=-1):
                     else:
                         if transaction_activeFundraiser == True:
                             # update the balances for the main currency
-                            # update to_addr
                             update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
-                            # update from_addr
                             update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
                             
                             #update the balances for the smart property being funded
                             active_fundraiser = fundraisers_dict[to_addr]
+                            fundraiser_hash = active_fundraiser['tx_hash']
                             #bonus calculation
-                            bonus_seconds = int(t['deadline']) - int(t['tx_time'][:-3])
-                            bonus_percentage =  (( bonus_seconds/604800) * (t['earlybirdBonus']/100)) + 1
+                            bonus_seconds = int(active_fundraiser['deadline']) - int(t['tx_time'][:-3])
+                            bonus_percentage =  (( bonus_seconds/604800) * (int(active_fundraiser['earlybirdBonus'])/100)) + 1
                             #percent for issuer calculation
-                            percentage_issuer = (active_fundraiser['percentageForIssuer']*0.01)
+                            percentage_issuer = (int(active_fundraiser['percentageForIssuer'])*0.01)
                             c = coins_dict.keys()[coins_dict.values().index(str(active_fundraiser['currencyId']))]
                             if int(active_fundraiser['property_type']) == 2:
                                 #for property_type 2 (divisible)
@@ -1088,6 +1121,9 @@ def check_mastercoin_transaction(t, index=-1):
                                 #add %bonus and assign to buyer here
                                 update_addr_dict(from_addr, True,'Smart Property', c, balance=tokens_created, received=tokens_created, in_tx=active_fundraiser)
                                 update_addr_dict(to_addr, True,'Smart Property', c, balance=tokens_percent_issuer, received=tokens_percent_issuer, in_tx=t)
+
+                                fundraisers_metadata_dict[fundraiser_hash]['funded_tx'].append(t)
+                                fundraisers_metadata_dict[fundraiser_hash]['current_premine']+= tokens_percent_issuer
                             else:
                                 #for property_type 1(indivisible) note int type for calculation
                                 tokens_created=int((int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ))*bonus_percentage)
@@ -1097,6 +1133,8 @@ def check_mastercoin_transaction(t, index=-1):
                                 #for property_type 1 (non-divisible) use ints for calculating the amount_transfer
                                 update_addr_dict(from_addr, True,'Smart Property', c, balance=tokens_created, received=tokens_created, in_tx=active_fundraiser)
                                 update_addr_dict(to_addr, True,'Smart Property', c, balance=tokens_percent_issuer, received=tokens_percent_issuer, in_tx=t)
+                                fundraisers_metadata_dict[fundraiser_hash]['funded_tx'].append(t)
+                                fundraisers_metadata_dict[fundraiser_hash]['current_premine']+= tokens_percent_issuer
                         else:
                             update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
                             # update from_addr
@@ -1523,6 +1561,7 @@ def check_mastercoin_transaction(t, index=-1):
                             else:
                                 info(['new fundraiser detected', from_addr, t])
                                 fundraisers_dict[from_addr] = t
+                                fundraisers_metadata_dict[t['tx_hash']] = {  'funded_tx': [], 'current_premine': 0}
 
                         return True
                     else:
@@ -1536,6 +1575,7 @@ def check_mastercoin_transaction(t, index=-1):
 
                             if fundraisers_dict.has_key(from_addr) and (fundraisers_dict[from_addr]['currencyId'] == str(int(t['property_type'],16))):
                                 info(['fundraiser cancellation detected, deleting: ', from_addr, t['tx_hash'] ])
+                                award_premine_to_issuer(from_addr)
                                 del fundraisers_dict[from_addr]
                                 return True
                             else:
