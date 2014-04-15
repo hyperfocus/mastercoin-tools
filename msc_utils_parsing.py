@@ -480,8 +480,6 @@ def parse_multisig(tx, tx_hash='unknown'):
                                         parse_dict['baseCoin']=datahex[0:2] # 00 for BTC
                                         long_packet += datahex[4:-2].upper()
 
-                                    spare_bytes = ''
-
                                     #set these fields for validation
                                     parse_dict['formatted_amount'] = 0
                                     parse_dict['currency_str'] = 'Smart Property'
@@ -508,33 +506,56 @@ def parse_multisig(tx, tx_hash='unknown'):
                                     parse_dict['formatted_property_type']=int(long_packet[10:14],16)
                                     parse_dict['formatted_previous_property_id']=int(long_packet[14:22],16)
                                     #prepare var-fields for processing
-                                    spare_bytes = ''.join(long_packet[22:])
-
+                            
                                     #var fields
                                     try:
-                                        parse_dict['propertyCategory']=spare_bytes.split('00')[0].decode('hex')
-                                        parse_dict['propertySubcategory']=spare_bytes.split('00')[1].decode('hex')
-                                        parse_dict['propertyName']=spare_bytes.split('00')[2].decode('hex')
-                                        parse_dict['propertyUrl']=spare_bytes.split('00')[3].decode('hex')
-                                        parse_dict['propertyData']=spare_bytes.split('00')[4].decode('hex')
+                                        spare_bytes = []
+                                        for i in range(0,len(long_packet[22:]),2):
+                                            spare_bytes.append(long_packet[22:][i] + long_packet[22:][i+1])
+                                        
+                                        prop_cat = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+
+                                        spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
+                                        prop_subcat = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+
+                                        spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
+                                        prop_name = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+
+                                        spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
+                                        prop_url = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex')
+
+                                        spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
+                                        prop_data = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+
+                                        parse_dict['propertyCategory']=prop_cat
+                                        parse_dict['propertySubcategory']=prop_subcat
+                                        parse_dict['propertyName']=prop_name
+                                        parse_dict['propertyUrl']=prop_url
+                                        parse_dict['propertyData']=prop_data
                                     except Exception,e:
                                         error(['cannot parse smart property fields',e, traceback.format_exc(), tx_hash])
                                         return {'tx_hash':tx_hash, 'invalid':(True, 'malformed smart property fields')}
 
-
-                                    num_var_fields = 5
-                                    len_var_fields = len(''.join(spare_bytes.split('00')[:num_var_fields]) + ('00'*num_var_fields) )
-                                    
                                     #fixed fields after var fields
                                     try:
                                         if data_dict['transactionType'] == '0032':
-                                            parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields:len_var_fields+16],16))
+                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
+                                            parse_dict['numberOfProperties']=str(int(spare_bytes[:16],16))
                                         else:
-                                            parse_dict['currencyIdentifierDesired']=str(int(spare_bytes[len_var_fields:len_var_fields+8],16))
-                                            parse_dict['numberOfProperties']=str(int(spare_bytes[len_var_fields+8:len_var_fields+8+16],16))
-                                            parse_dict['deadline']=str(int(spare_bytes[len_var_fields+8+16:len_var_fields+8+16+16],16))
-                                            parse_dict['earlybirdBonus']=str(int(spare_bytes[len_var_fields+8+16+16:len_var_fields+8+16+16+2],16))
-                                            parse_dict['percentageForIssuer']=str(int(spare_bytes[len_var_fields+8+16+16+2:len_var_fields+8+16+16+2+2],16))
+                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
+                                            parse_dict['currencyIdentifierDesired']=str(int(spare_bytes[:8],16))
+
+                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
+                                            parse_dict['numberOfProperties']=str(int(spare_bytes[:16],16))
+
+                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
+                                            parse_dict['deadline']=str(int(spare_bytes[:16],16))
+
+                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
+                                            parse_dict['earlybirdBonus']=str(int(spare_bytes[:2],16))
+
+                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
+                                            parse_dict['percentageForIssuer']=str(int(spare_bytes[:2],16))
                                     except Exception,e:
                                         error(['cannot parse smart property fields',e, traceback.format_exc(), tx_hash])
                                         return {'tx_hash':tx_hash, 'invalid':(True, 'malformed smart property fields')}
