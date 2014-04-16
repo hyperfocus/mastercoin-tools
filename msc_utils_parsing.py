@@ -518,8 +518,8 @@ def parse_multisig(tx, tx_hash='unknown'):
                                         parse_dict['propertyUrl']=spare_bytes.split('00')[3].decode('hex')
                                         parse_dict['propertyData']=spare_bytes.split('00')[4].decode('hex')
                                     except Exception,e:
-                                        return {'tx_hash':tx_hash, 'invalid':(True, 'malformed smart property fields')}
                                         error(['cannot parse smart property fields',e, traceback.format_exc(), tx_hash])
+                                        return {'tx_hash':tx_hash, 'invalid':(True, 'malformed smart property fields')}
 
 
                                     num_var_fields = 5
@@ -536,8 +536,8 @@ def parse_multisig(tx, tx_hash='unknown'):
                                             parse_dict['earlybirdBonus']=str(int(spare_bytes[len_var_fields+8+16+16:len_var_fields+8+16+16+2],16))
                                             parse_dict['percentageForIssuer']=str(int(spare_bytes[len_var_fields+8+16+16+2:len_var_fields+8+16+16+2+2],16))
                                     except Exception,e:
-                                        return {'tx_hash':tx_hash, 'invalid':(True, 'malformed smart property fields')}
                                         error(['cannot parse smart property fields',e, traceback.format_exc(), tx_hash])
+                                        return {'tx_hash':tx_hash, 'invalid':(True, 'malformed smart property fields')}
 
                             else: # non valid tx type
                                 if data_dict['transactionType'] == '0035': # Smart Property Cancellation
