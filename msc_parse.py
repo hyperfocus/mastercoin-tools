@@ -17,6 +17,16 @@ from msc_utils_parsing import *
 # global last block on the net
 last_height=get_last_height()
 
+def preventUnicodeDecodeError(parsed):
+    for key in parsed.keys():
+        try:
+            if type(parsed[key]) != type(0):
+                parsed[key] = unicode(parsed[key])
+        except UnicodeDecodeError,e:
+            startindex=e[2]
+            parsed[key] = parsed[key][:startindex]
+
+    return parsed
 def parse():
 
     ######################################
@@ -262,7 +272,11 @@ def parse():
                     parsed['tx_time']=str(block_timestamp)+'000'
                     debug(str(parsed))
                     filename='tx/'+parsed['tx_hash']+'.json'
-                    atomic_json_dump(parsed, filename)
+                    try:
+                        atomic_json_dump(parsed, filename)
+                    except UnicodeDecodeError,e:
+                        info('had unicode decode error: '+tx_hash)
+                        atomic_json_dump(preventUnicodeDecodeError(parsed), filename)
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
 
