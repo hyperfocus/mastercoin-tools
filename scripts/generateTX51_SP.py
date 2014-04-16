@@ -53,8 +53,8 @@ for unspent in unspent_tx:
    available_balance = unspent.amount + available_balance
 
 #check if minimum BTC balance is met
-if available_balance < Decimal(0.0006*3) and not force:
-    print json.dumps({ "status": "NOT OK", "error": "Not enough funds" , "fix": "Set \'force\' flag to proceed without balance checks" })
+if available_balance < Decimal(0.00006*3) and not force:
+    print json.dumps({ "status": "NOT OK", "error": "Not enough funds, you have " + str( available_balance ) + " and need at least 0.00018 BTC" , "fix": "Set \'force\' flag to proceed without balance checks" })
     exit()
 
 #generate public key of bitcoin address 
@@ -276,7 +276,7 @@ change = largest_spendable_input['amount'] - fee_total
 # calculate change : 
 # (total input amount) - (broadcast fee)
 if (Decimal(change) < Decimal(0) or fee_total > largest_spendable_input['amount']) and not force:
-    print json.dumps({ "status": "NOT OK", "error": "Not enough funds" , "fix": "Set \'force\' flag to proceed without balance checks" })
+    print json.dumps({ "status": "NOT OK", "error": "Not enough funds, you need " + str( fee_totoal ) , "fix": "Set \'force\' flag to proceed without balance checks" })
     exit()
 
 #retrieve raw transaction to spend it
