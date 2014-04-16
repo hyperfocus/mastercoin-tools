@@ -1091,8 +1091,8 @@ def check_mastercoin_transaction(t, index=-1):
                     balance_from=available_reward+addr_dict[from_addr][c]['balance']
                 else:
                     # print >> sys.stderr,  'Getting keys from address: ' + str( from_addr )
-                    for key in addr_dict[from_addr]:
-                        print  >> sys.stderr, '   ' + str( key )
+                    #for key in addr_dict[from_addr]:
+                    #    print  >> sys.stderr, '   ' + str( key )
 
                     # print >> sys.stderr, 'Sending funds to: ' + str( to_addr )
                     if c in addr_dict[from_addr]:
@@ -1541,6 +1541,11 @@ def check_mastercoin_transaction(t, index=-1):
                         else:
                             fundraiser = False
 
+                        if fundraiser: #active and valid fundraiser
+                            if fundraisers_dict.has_key(from_addr):
+                                mark_tx_invalid(t['tx_hash'],'already open fundraiser on this address at the current block')
+                                return False
+
                         #used later in validation
                         property_type = t['property_type']
                         prev_prop_id = int(t['previous_property_id'])
@@ -1570,13 +1575,9 @@ def check_mastercoin_transaction(t, index=-1):
                         
 
                         if fundraiser: #active and valid fundraiser
-                            if fundraisers_dict.has_key(from_addr):
-                                mark_tx_invalid(t['tx_hash'],'already open fundraiser on this address at the current block')
-                                return False
-                            else:
-                                info(['new fundraiser detected', from_addr, t])
-                                fundraisers_dict[from_addr] = t
-                                fundraisers_metadata_dict[t['tx_hash']] = {  'funded_tx': [], 'current_premine': 0}
+                            info(['new fundraiser detected', from_addr, t])
+                            fundraisers_dict[from_addr] = t
+                            fundraisers_metadata_dict[t['tx_hash']] = {  'funded_tx': [], 'current_premine': 0}
 
                         return True
                     else:
