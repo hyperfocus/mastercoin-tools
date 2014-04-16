@@ -15,7 +15,7 @@ from msc_utils_obelisk import *
 
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
 reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'}
-transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept', '0032':'Fixed property creation', '0033': 'Fundraiser property creation'}
+transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept', '0032':'Fixed property creation', '0033': 'Fundraiser property creation', '0035': 'Fundraiser cancellation'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 first_exodus_bootstrap_block=249498
@@ -540,7 +540,24 @@ def parse_multisig(tx, tx_hash='unknown'):
                                         error(['cannot parse smart property fields',e, traceback.format_exc(), tx_hash])
 
                             else: # non valid tx type
-                                return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
+                                if data_dict['transactionType'] == '0035': # Smart Property Cancellation
+                                    #should only be one packet for this tx type
+                                    dataHex = dataHex_deobfuscated_list[0][4:]
+                                    parse_dict['transactionVersion']=dataHex[0:4]
+                                    parse_dict['transactionType']=dataHex[4:8]
+                                    parse_dict['property_type']=dataHex[8:16]
+
+                                    #set these fields for validation
+                                    parse_dict['formatted_amount'] = 0
+                                    parse_dict['currency_str'] = 'Smart Property'
+                                    parse_dict['currencyId'] = 0
+
+                                    #unneeded fields
+                                    parse_dict.pop('amount', None)
+                                    parse_dict.pop('bitcoin_amount_desired', None)
+                                    parse_dict.pop('block_time_limit', None)
+                                else:
+                                    return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
 
         else: # not the multisig output
             # the output with dust
