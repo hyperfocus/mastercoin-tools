@@ -21,6 +21,17 @@ rpcuser=<username>
 rpcpassword=<password>
 rpcallowip=<local IP>
    ```
+   
+ Alternatively if you have a remote bitcoind instance you can use that as well. On the machine where you will run the scripts create ``~/.bitcoin/bitcoin.conf`` with the following lines:
+
+   ```
+rpcuser=<remote username>
+rpcpassword=<remote password>
+rpcconnect=<Remote Server IP>
+rpcport=<Remote Port>
+   ```
+   
+ Dont' forget to add a whitelist entry (rpcallowip) to your remote bitcoind (or bitcoin-qt) for the ip address of the machine the scripts will run from. 
 
 3. Install libraries
 

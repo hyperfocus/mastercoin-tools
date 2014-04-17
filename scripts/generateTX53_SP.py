@@ -7,6 +7,7 @@ import hashlib
 import operator
 import bitcoinrpc
 import pybitcointools
+import getpass
 from decimal import *
 
 
@@ -24,8 +25,35 @@ JSON = sys.stdin.readlines()
 
 listOptions = json.loads(str(''.join(JSON)))
 
+USER=getpass.getuser()
+
 #sort out whether using local or remote API
 conn = bitcoinrpc.connect_to_local()
+try:
+    conn.getblockcount()
+except StandardError:
+    try:
+        with open('/home/'+USER+'/.bitcoin/bitcoin.conf') as fp:
+            RPCPORT="8332"
+            RPCHOST="localhost"
+            for line in fp:
+                #print line
+                if line.split('=')[0] == "rpcuser":
+                    RPCUSER=line.split('=')[1].strip()
+                elif line.split('=')[0] == "rpcpassword":
+                    RPCPASS=line.split('=')[1].strip()
+                elif line.split('=')[0] == "rpcconnect":
+                    RPCHOST=line.split('=')[1].strip()
+                elif line.split('=')[0] == "rpcport":
+                    RPCPORT=line.split('=')[1].strip()
+    except IOError as e:
+        print "Unable to open conf file: ~/.bitcoin/bitcoin.conf"
+        exit()
+    try:
+        conn = bitcoinrpc.connect_to_remote(RPCUSER,RPCPASS,host=RPCHOST,port=RPCPORT,use_https=False)
+    except StandardError:
+        print json.dumps({ "status": "NOT OK", "error": "Can't connect to bitcoind" , "fix": "Check bitcoind or config: "+RPCUSER+" "+RPCPASS+" "+RPCHOST+" "+RPCPORT})
+        exit()
 
 #check if private key provided produces correct address
 address = pybitcointools.privkey_to_address(listOptions['from_private_key'])
@@ -337,7 +365,11 @@ hex_transaction = hex_transaction + blocklocktime
 assert type(conn.decoderawtransaction(''.join(hex_transaction).lower())) == type({})
 
 #sign it
-signed_transaction = conn.signrawtransaction(''.join(hex_transaction))
+try:
+   signed_transaction = conn.signrawtransaction(''.join(hex_transaction))
+except Exception:
+    print json.dumps({ "status": "NOT OK", "error": "Wallet Locked" , "fix": "Manually unlock wallet (walletpassphrase <yourpassphrase> 120)"})
+    exit()
 
 #output final product as JSON
 print json.dumps({ "rawtransaction": signed_transaction })
