@@ -560,13 +560,13 @@ def parse_multisig(tx, tx_hash='unknown'):
                                             spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+1:])
                                             parse_dict['currencyIdentifierDesired']=str(int(spare_bytes[:8],16))
 
-                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+8:])
+                                            spare_bytes = ''.join(spare_bytes[8:])
                                             parse_dict['numberOfProperties']=str(int(spare_bytes[:16],16))
 
-                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+16:])
+                                            spare_bytes = ''.join(spare_bytes[16:])
                                             parse_dict['deadline']=str(int(spare_bytes[:16],16))
 
-                                            spare_bytes = ''.join(spare_bytes[spare_bytes.index('00')+16:])
+                                            spare_bytes = ''.join(spare_bytes[16:])
                                             parse_dict['earlybirdBonus']=str(int(spare_bytes[:2],16))
 
                                             spare_bytes = ''.join(spare_bytes[2:4])
