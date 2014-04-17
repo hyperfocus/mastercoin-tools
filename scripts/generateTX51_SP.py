@@ -115,23 +115,38 @@ prop_url_bytes = ''                                      # var bytes
 prop_data_bytes = ''                                     # var bytes
 
 for let in property_category:
-    prop_cat_bytes = prop_cat_bytes + hex(ord(let))[2:]
+    hex_bytes = hex(ord(let))[2:]
+    if len(hex_bytes) % 2 == 1:
+        hex_bytes = hex_bytes[:len(hex_bytes)-1]
+    prop_cat_bytes = prop_cat_bytes + hex_bytes
 prop_cat_bytes = prop_cat_bytes + '00'
 
 for let in property_subcategory:
-    prop_subcat_bytes = prop_subcat_bytes + hex(ord(let))[2:]
+    hex_bytes = hex(ord(let))[2:]
+    if len(hex_bytes) % 2 == 1:
+        hex_bytes = hex_bytes[:len(hex_bytes)-1]
+    prop_subcat_bytes = prop_subcat_bytes + hex_bytes
 prop_subcat_bytes = prop_subcat_bytes + '00'
 
 for let in property_name:
-    prop_name_bytes = prop_name_bytes + hex(ord(let))[2:]
+    hex_bytes = hex(ord(let))[2:]
+    if len(hex_bytes) % 2 == 1:
+        hex_bytes = hex_bytes[:len(hex_bytes)-1]
+    prop_name_bytes = prop_name_bytes + hex_bytes
 prop_name_bytes = prop_name_bytes + '00'
 
 for let in property_url:
-    prop_url_bytes = prop_url_bytes + hex(ord(let))[2:]
+    hex_bytes = hex(ord(let))[2:]
+    if len(hex_bytes) % 2 == 1:
+        hex_bytes = hex_bytes[:len(hex_bytes)-1]
+    prop_url_bytes = prop_url_bytes + hex_bytes
 prop_url_bytes = prop_url_bytes + '00'
 
 for let in property_data:
-    prop_data_bytes = prop_data_bytes + hex(ord(let))[2:]
+    hex_bytes = hex(ord(let))[2:]
+    if len(hex_bytes) % 2 == 1:
+        hex_bytes = hex_bytes[:len(hex_bytes)-1]
+    prop_data_bytes = prop_data_bytes + hex_bytes
 prop_data_bytes = prop_data_bytes + '00'
 
 total_bytes = (len(tx_ver_bytes) + 
