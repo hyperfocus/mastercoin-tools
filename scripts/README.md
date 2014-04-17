@@ -22,7 +22,7 @@ rpcpassword=<password>
 rpcallowip=<local IP>
    ```
    
-2b. Alternatively if you have a remote bitcoind instance you can use that as well. Create ``~/.bitcoin/bitcoin.conf`` with the following lines:
+ Alternatively if you have a remote bitcoind instance you can use that as well. Create ``~/.bitcoin/bitcoin.conf`` with the following lines:
 
    ```
 rpcuser=<remote username>
