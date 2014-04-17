@@ -244,7 +244,7 @@ def send_tx(filename, host='localhost', port=8333):
         return None
 
 def broadcast_tx(filename):
-    out, err = run_command("sx sendtx-bci " + filename)
+    out, err = run_command("sx sendtx-obelisk " + filename)
     if err != None:
         return err
     else:
