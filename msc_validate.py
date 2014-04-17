@@ -1056,7 +1056,12 @@ def check_mastercoin_transaction(t, index=-1):
             if c == 'Smart Property':
                 # print >> sys.stderr, 'Looking up smart property name'
                 transaction_smartProperty=True
-                c = coins_dict.keys()[coins_dict.values().index(str(int(t['currencyId'],16)))]
+                try:
+                    c = coins_dict.keys()[coins_dict.values().index(str(int(t['currencyId'],16)))]
+                except ValueError:
+                    debug('invalid currency identifier'+tx_hash)
+                    mark_tx_invalid(tx_hash, 'pay with a non existing currency')
+                    return False 
                 # print >> sys.stderr, 'Smart property name: ' + c
                 # print >> sys.stderr, '   currencyId: ' + str(int(t['currencyId'],16))
             # heavy debug
