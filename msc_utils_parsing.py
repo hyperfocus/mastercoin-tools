@@ -30,6 +30,16 @@ features_enable_dict={'distributed exchange':290630}
 LAST_VALIDATED_BLOCK_NUMBER_FILE='last_validated_block.txt'
 max_payment_timeframe=255
 
+#remove unicode
+def dehexify(hex_str):
+    temp_str=[]
+    for let in hex_str:
+        if ord(let) < 128:
+            temp_str.append(let)
+        else:
+            temp_str.append('?')
+    return ''.join(temp_str)
+
 # used as a key function for sorting outputs of msc tx
 def get_dataSequenceNum(item):
     try:
@@ -513,19 +523,24 @@ def parse_multisig(tx, tx_hash='unknown'):
                                         for i in range(0,len(long_packet[22:]),2):
                                             spare_bytes.append(long_packet[22:][i] + long_packet[22:][i+1])
                                         
-                                        prop_cat = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+                                        prop_cat = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex')
+                                        prop_cat=dehexify(prop_cat)
 
                                         spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
                                         prop_subcat = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+                                        prop_subcat=dehexify(prop_subcat)
 
                                         spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
                                         prop_name = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+                                        prop_name=dehexify(prop_name)
 
                                         spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
                                         prop_url = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex')
+                                        prop_name=dehexify(prop_name)
 
                                         spare_bytes = spare_bytes[spare_bytes.index('00')+1:]
                                         prop_data = ''.join(spare_bytes[0:spare_bytes.index('00')]).decode('hex') 
+                                        prop_data=dehexify(prop_data)
 
                                         parse_dict['propertyCategory']=prop_cat
                                         parse_dict['propertySubcategory']=prop_subcat
