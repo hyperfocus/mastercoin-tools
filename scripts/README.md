@@ -174,4 +174,54 @@ bitcoind sendrawtransaction 0100000001e604d2bbdec6071b4ca4f160629799f63bd198310e
 
 7. The output will be the transaction hash ID.  Check http://blockchain.info to see the status of the transation.  You can also find the transaction via blockchain.info's page for the issuing address.
 
+## Manually closing a crowdsale
+   
+1. Create .json file which describes the currency.  Note: 
+   property_id: the property ID of the property to cancel.
+   ```
+{
+  "transaction_type": 53,
+  "property_id": 2147483658,
+  "transaction_from": "1LBB97UAhyQjtJJwk71LvzijnZw7o29XRm",
+  "from_private_key": "5J6TFQ2ULGHErgFX23qeBQVeragqqjTwdnLcFpCLpKp5HFagWEZ"
+}
+   ```
+   
+2. Run the script with your .json file as input.
+
+   ```
+cmlacy@blockchain-2:~/mastercoin-tools/scripts$ cat cancel-ducats.json | python generateTX53_SP.py 
+   ```
+3. It may return an error:
+
+   ```
+{"status": "NOT OK", "fix": "bitcoind importprivkey 5J6TFQ2ULGHErgFX23qeBQVeragqqjTwdnLcFpCLpKp5HFagWEZ imported_1397611891", "error": "Couldn't find address in wallet, please run 'fix' on the machine"}
+   ```
+   In that case, run the command listed in “fix” to correct it.
+   ```
+cmlacy@blockchain-2:~/mastercoin-tools/scripts$ bitcoind importprivkey 5J6TFQ2ULGHErgFX23qeBQVeragqqjTwdnLcFpCLpKp5HFagWEZ imported_1397611891
+   ```
+   
+4. And run again:
+
+   ```
+cmlacy@blockchain-2:~/mastercoin-tools/scripts$ cat cancel-ducats.json | python generateTX53_SP.py 
+   ```
+
+5. This outputs the actual raw transaction in hex:
+
+   ```
+False False True
+{"rawtransaction": {"hex": "010000000153eeb76c1e21677c1e683a18755a8b567da626a0870dee8c7b5d18e70f0dc9ec010000008b483045022100f23b95a045a93429e602d02de2cccae010ad1eb1ed0639c7a9a162c10bcddd33022002d09cd7963a741c7d6636d0afa25bad47650d5857a6cffe28e8f3e80f1ba69d0141047905461a24edc485b6e4fd98a97cc4d12ea7c2e25c187c5f13e461d31e37e6c118a74add7cc146cadb0f3f1cf25cb503347706823f044b7682cd535035e8cc7affffffff037c150000000000001976a914946cb2e08075bcbaf157e47bcb67eb2b2339d24288ac683c0100000000001976a914d257038a962bd29a40268f939c91b69523ed17c888acf82a000000000000675141047905461a24edc485b6e4fd98a97cc4d12ea7c2e25c187c5f13e461d31e37e6c118a74add7cc146cadb0f3f1cf25cb503347706823f044b7682cd535035e8cc7a210281c10f942911b31414f489f86d5fd4d5cd44038e6776d8c4163b10a721acacdd52ae00000000", "complete": true}}
+   ```
+
+6. Send the transaction by copying and pasting that hex string (without its quotes) as an argument to ``bitcoind sendrawtransaction``
+
+   ```
+cmlacy@blockchain-2:~/mastercoin-tools/scripts$ bitcoind sendrawtransaction 010000000153eeb76c1e21677c1e683a18755a8b567da626a0870dee8c7b5d18e70f0dc9ec010000008b483045022100f23b95a045a93429e602d02de2cccae010ad1eb1ed0639c7a9a162c10bcddd33022002d09cd7963a741c7d6636d0afa25bad47650d5857a6cffe28e8f3e80f1ba69d0141047905461a24edc485b6e4fd98a97cc4d12ea7c2e25c187c5f13e461d31e37e6c118a74add7cc146cadb0f3f1cf25cb503347706823f044b7682cd535035e8cc7affffffff037c150000000000001976a914946cb2e08075bcbaf157e47bcb67eb2b2339d24288ac683c0100000000001976a914d257038a962bd29a40268f939c91b69523ed17c888acf82a000000000000675141047905461a24edc485b6e4fd98a97cc4d12ea7c2e25c187c5f13e461d31e37e6c118a74add7cc146cadb0f3f1cf25cb503347706823f044b7682cd535035e8cc7a210281c10f942911b31414f489f86d5fd4d5cd44038e6776d8c4163b10a721acacdd52ae00000000
+   ```
+
+7. The output will be the transaction hash ID.  Check http://blockchain.info to see the status of the transaction.  You can also find the transaction via blockchain.info's page for the issuing address.
+
+
 
