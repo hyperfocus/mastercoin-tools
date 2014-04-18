@@ -54,7 +54,7 @@ tx_properties=\
      'formatted_amount_requested', 'formatted_price_per_coin', 'bitcoin_required', \
      'payment_done', 'payment_expired', \
      'updating', 'updated_by', \
-     'status']
+     'status','fundraiser_send']
 
 # all available properties of a currency in address
 addr_properties=['balance', 'reserved', 'received', 'sent', 'bought', 'sold', 'offer', 'accept', 'reward',\
@@ -790,7 +790,7 @@ def award_premine_to_issuer(issuer_addr):
     c = coins_dict.keys()[coins_dict.values().index(str(active_fundraiser['currencyId']))]
     for transaction in fundraiser_metadata['funded_tx']:
         bonus_seconds = int(active_fundraiser['deadline']) - int(transaction['tx_time'][:-3])
-        bonus_percentage =  (( bonus_seconds/604800) * (int(active_fundraiser['earlybirdBonus'])/100)) + 1
+        bonus_percentage =  float( bonus_seconds)/604800 * float(active_fundraiser['earlybirdBonus'])/100 + 1
 
         amount_transfer=to_satoshi(transaction['formatted_amount'])
         if int(active_fundraiser['property_type']) == 2:
@@ -799,7 +799,7 @@ def award_premine_to_issuer(issuer_addr):
             fundraiser_metadata['total_tokens_created']+=tokens_created
         else:
             #for property_type 1(indivisible) note int type for calculation
-            tokens_created=int((int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ))*bonus_percentage)
+            tokens_created=int(amount_transfer*10e-9*int(active_fundraiser['numberOfProperties'])*bonus_percentage)
             fundraiser_metadata['total_tokens_created']+=tokens_created
 
     #add Z% of Y Tokens and assign to issuer
@@ -810,6 +810,7 @@ def award_premine_to_issuer(issuer_addr):
     else:
         total_tokens_missed=int(total_tokens_premine-fundraiser_metadata['current_premine'])
 
+    info(["final total premined", total_tokens_premine, "tokens missed", total_tokens_missed, "metadata", fundraiser_metadata])
     update_addr_dict(issuer_addr, True,'Smart Property', c, balance=total_tokens_missed, received=total_tokens_missed, in_tx=active_fundraiser)
 
 def check_active_fundraisers(time_block):
@@ -1127,11 +1128,15 @@ def check_mastercoin_transaction(t, index=-1):
                             active_fundraiser = fundraisers_dict[to_addr]
                             fundraiser_hash = active_fundraiser['tx_hash']
                             #bonus calculation
+
                             bonus_seconds = int(active_fundraiser['deadline']) - int(t['tx_time'][:-3])
-                            bonus_percentage =  (( bonus_seconds/604800) * (int(active_fundraiser['earlybirdBonus'])/100)) + 1
+                            info(["bonus calc", float(bonus_seconds)/604800, float(active_fundraiser['earlybirdBonus'])/100, active_fundraiser['earlybirdBonus'] ])
+                            bonus_percentage =  float(bonus_seconds)/604800 * (float(active_fundraiser['earlybirdBonus'])/100) + 1
                             #percent for issuer calculation
                             percentage_issuer = (int(active_fundraiser['percentageForIssuer'])*0.01)
+
                             c = coins_dict.keys()[coins_dict.values().index(str(active_fundraiser['currencyId']))]
+
                             if int(active_fundraiser['property_type']) == 2:
                                 #for property_type 2 (divisible)
                                 tokens_created=((amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties']))*bonus_percentage
@@ -1142,11 +1147,13 @@ def check_mastercoin_transaction(t, index=-1):
                                 update_addr_dict(from_addr, True,'Smart Property', c, balance=tokens_created, received=tokens_created, in_tx=active_fundraiser)
                                 update_addr_dict(to_addr, True,'Smart Property', c, balance=tokens_percent_issuer, received=tokens_percent_issuer, in_tx=t)
 
+
+                                info(["Bonus percentage", bonus_percentage, "percent for issuer", percentage_issuer,"total created", tokens_created, "tokens for issuer", tokens_percent_issuer])
                                 fundraisers_metadata_dict[fundraiser_hash]['funded_tx'].append(t)
                                 fundraisers_metadata_dict[fundraiser_hash]['current_premine']+= tokens_percent_issuer
                             else:
                                 #for property_type 1(indivisible) note int type for calculation
-                                tokens_created=int((int(amount_transfer*10e-9)*int(active_fundraiser['numberOfProperties'] ))*bonus_percentage)
+                                tokens_created=int(amount_transfer*10e-9*int(active_fundraiser['numberOfProperties'])*bonus_percentage)
                                 #add Z% of Y Tokens and assign to issuer
                                 tokens_percent_issuer=tokens_created*percentage_issuer 
                                 
@@ -1155,6 +1162,10 @@ def check_mastercoin_transaction(t, index=-1):
                                 update_addr_dict(to_addr, True,'Smart Property', c, balance=tokens_percent_issuer, received=tokens_percent_issuer, in_tx=t)
                                 fundraisers_metadata_dict[fundraiser_hash]['funded_tx'].append(t)
                                 fundraisers_metadata_dict[fundraiser_hash]['current_premine']+= tokens_percent_issuer
+
+                                info(["Bonus percentage", bonus_percentage, "percent for issuer", percentage_issuer,"total created", tokens_created, "tokens for issuer", tokens_percent_issuer])
+
+                            update_tx_dict(t['tx_hash'], fundraiser_send=['true', active_fundraiser['currencyId']])
                         else:
                             update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
                             # update from_addr
@@ -1533,23 +1544,36 @@ def check_mastercoin_transaction(t, index=-1):
                             return False
 
                         debug('property creation from '+t['from_address']+' '+t['tx_hash'])
+
                         ecosystem = int(t['ecosystem'])
                         if ecosystem == 1:
                             mark_tx_invalid(tx_hash, 'MSC ecosystem not yet launched')
                             return False
-                        else:
+                        elif ecosystem == 2:
                             #determine prop_id
                             prop_id=str(len(properties_dict) + 2147483651)  # +3 to not collide with MSC/TMSC
+                        else:
+                            mark_tx_invalid(tx_hash, 'TMSC/MSC are valid ecosystems only')
+                            return False
 
                         if transaction_type == transaction_type_dict['0033']:
                             fundraiser = True
                         else:
                             fundraiser = False
 
-                        if fundraiser: #active and valid fundraiser
+                        if fundraiser: #active and valid fundraiser checks
                             if fundraisers_dict.has_key(from_addr):
                                 mark_tx_invalid(t['tx_hash'],'already open fundraiser on this address at the current block')
                                 return False
+
+                            curr_desired = t['currencyIdentifierDesired']
+                            try:
+                                if int(curr_desired) > 3:
+                                    valid_curr_desired=coins_dict.keys()[coins_dict.values().index(curr_desired)]
+                            except ValueError:
+                                debug('invalid currency identifier desired'+tx_hash)
+                                mark_tx_invalid(tx_hash, 'desire non existing currency for fundraiser')
+                                return False 
 
                         #used later in validation
                         property_type = t['property_type']
@@ -1559,7 +1583,7 @@ def check_mastercoin_transaction(t, index=-1):
                         prop_name = t['propertyName']
                         #prop_url = t['propertyUrl']
                         #prop_data = t['propertyData']
-                        #curr_desired = t['currencyIdentifierDesired']
+
                         num_prop = t['numberOfProperties']
                         #deadline = t['deadline']
                         #earlybird_bonus = t['earlybirdBonus']
