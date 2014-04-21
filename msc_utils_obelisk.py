@@ -10,19 +10,27 @@
 #                                                     #
 #######################################################
 
+import requests
 import simplejson
 import re
 import os
 import msc_globals
 from msc_utils_bitcoin import *
 
-MAX_COMMAND_TRIES=3
+MAX_COMMAND_TRIES=7
 
 def get_last_height():
     out, err = run_command("sx fetch-last-height")
     if err != None:
         return err
     else:
+        if out.strip()[:3]=='Ass': #assertion failed in mailbox.cpp
+            try:
+                last_height=requests.get('http://btc.blockr.io/api/v1/block/info/last').json()['data']['nb']
+                return last_height
+            except Exception,e:
+                info(['failed getting height via sx'])
+                return '-1'
         return out.strip()
 
 def get_block_timestamp(height):
@@ -81,8 +89,18 @@ def get_tx_index(tx_hash):
             s=out.split()
             height=s[1]
             index=s[3]
-            return(height,index)
-        except IndexError:
+            if height=='failed:':
+		url='http://btc.blockr.io/api/v1/tx/info/' + tx_hash
+		print url
+                try:
+                    height=requests.get(url).json()['data']['block']
+                    return(height,-1)
+                except Exception,e:
+                    info(['failed getting height for '+tx_hash,e])
+                    return (-1,-1)
+	    else:
+                return(height,index)
+	except IndexError:
             return (-1,-1)
 
 def get_json_history(addr):
@@ -114,8 +132,13 @@ def get_value_from_output(tx_and_number):
     rawtx=get_raw_tx(txid)
     json_tx=get_json_tx(rawtx)
     if json_tx == None:
-        info('json_tx is None')
-        return None
+        try:
+            #to satoshi
+            value=float(requests.get('http://btc.blockr.io/api/v1/tx/info/' + tx_hash).json()['data']['vouts'][number][''])*100000000
+            return int(value) #back to satoshi
+        except Exception,e:
+            info(['failed getting json_tx (None) for '+txid,e])
+            return None
     try:
         all_outputs=json_tx['outputs']
     except TypeError: # obelisk can give None
@@ -133,8 +156,12 @@ def get_address_from_output(tx_and_number):
     rawtx=get_raw_tx(tx_hash)
     json_tx=get_json_tx(rawtx)
     if json_tx == None:
-        info('failed getting json_tx (None) for '+tx_hash)
-        return None
+       try:
+            address=str(requests.get('http://btc.blockr.io/api/v1/tx/info/' + tx_hash).json()['data']['vouts'][number]['address'])
+            return address
+       except Exception,e:
+            info(['failed getting json_tx (None) for '+txid,e])
+            return None
     all_outputs=json_tx['outputs']
     output=all_outputs[number]
     return output['address']

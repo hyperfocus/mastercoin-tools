@@ -20,6 +20,7 @@ sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cance
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
+exodus_bootstrap_orig_deadline=1377993600
 exodus_bootstrap_deadline=1377993874
 seconds_in_one_year=31556926
 multisig_disabled=False
