@@ -103,6 +103,8 @@ def parse():
     else:
         # build fake history of length 1 (debug purposes)
         json_tx=get_json_tx(get_raw_tx(single_tx))
+	if json_tx==None: #retry
+        	json_tx=get_json_tx(get_raw_tx(single_tx))
         marker_number=-1
         marker_value=-1
         i=0
