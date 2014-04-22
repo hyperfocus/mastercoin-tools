@@ -1578,7 +1578,7 @@ def check_mastercoin_transaction(t, index=-1):
                         debug('property creation from '+t['from_address']+' '+t['tx_hash'])
 
                         ecosystem = int(t['ecosystem'])
-                        if ecosystem == 1 and int(t['block']) >= 297130:
+                        if ecosystem == 1 and int(t['block']) >= 297112:
 			    count=0
 			    for each in properties_dict.keys():
 				if int(each) > 2 and int(each) < 2147483647:
