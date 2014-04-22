@@ -134,7 +134,9 @@ def get_value_from_output(tx_and_number):
     if json_tx == None:
         try:
             #to satoshi
-            value=float(requests.get('http://btc.blockr.io/api/v1/tx/info/' + tx_hash).json()['data']['vouts'][number][''])*100000000
+            req=requests.get( 'http://btc.blockr.io/api/v1/tx/info/' + tx_hash )
+            requestJson = req.json()
+            value=float(requestJson['data']['vouts'][number]['amount'])*100000000
             return int(value) #back to satoshi
         except Exception,e:
             info(['failed getting json_tx (None) for '+txid,e])

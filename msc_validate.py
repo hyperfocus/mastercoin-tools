@@ -1578,14 +1578,21 @@ def check_mastercoin_transaction(t, index=-1):
                         debug('property creation from '+t['from_address']+' '+t['tx_hash'])
 
                         ecosystem = int(t['ecosystem'])
-                        if ecosystem == 1:
-                            mark_tx_invalid(tx_hash, 'MSC ecosystem not yet launched')
-                            return False
-                        elif ecosystem == 2:
+                        if ecosystem == 1 and int(t['block']) >= 297130:
+			    count=0
+			    for each in properties_dict.keys():
+				if int(each) > 2 and int(each) < 2147483647:
+				    count+=1	
+                            prop_id=str(count + 3)  # +3 to not collide with MSC/TMSC
+			elif ecosystem == 2:
+			    count=0
+			    for each in properties_dict.keys():
+				if int(each) > 2147483650:
+				    count+=1	
                             #determine prop_id
-                            prop_id=str(len(properties_dict) + 2147483651)  # +3 to not collide with MSC/TMSC
+                            prop_id=str(count + 2147483651)  # +3 to not collide with MSC/TMSC
                         else:
-                            mark_tx_invalid(tx_hash, 'TMSC/MSC are valid ecosystems only')
+                            mark_tx_invalid(tx_hash, 'TMSC/MSC are valid ecosystems only or MSC ecosystem before non-live block')
                             return False
 
                         if transaction_type == transaction_type_dict['0033']:
