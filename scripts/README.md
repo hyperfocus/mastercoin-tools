@@ -9,7 +9,7 @@ You'll need python2.7.6 and a synced bitcoind node (Unlike the rest of mastercoi
 1. Make sure bitcoind is set up right.
 
    ```
-cmlacy@blockchain-2:~$ bitcoind getinfo
+$ bitcoind getinfo
    ```
    
 2. Create ``~/.bitcoin/bitcoin.conf`` if it complains.
@@ -255,7 +255,7 @@ $ bitcoind importprivkey 5J6TFQ2ULGHErgFX23qeBQVeragqqjTwdnLcFpCLpKp5HFagWEZ imp
 4. And run again:
 
    ```
-cmlacy@blockchain-2:~/mastercoin-tools/scripts$ cat redeem-escrows.json | python redeemMultiSig.py
+$ cat redeem-escrows.json | python redeemMultiSig.py
    ```
 
 5. This outputs the actual raw transaction in hex:
