@@ -43,8 +43,7 @@ cmlacy@blockchain-2:~$ sudo pip install bitcoin-python pybitcointools
 4. Get these scripts
 
    ```
-cmlacy@blockchain-2:~$ clone mastercoin-tools
-cmlacy@blockchain-2:~$ cd mastercoin-tools/scripts
+cmlacy@blockchain-2:~$ git clone https://github.com/hyperfocus/mastercoin-tools.git
 cmlacy@blockchain-2:~$ cd mastercoin-tools/scripts
    ```
 
